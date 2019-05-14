@@ -1,0 +1,21 @@
+FROM postgres:9.5
+
+WORKDIR /app
+
+ENV DOTNET_VERSION 1.1.5
+ENV DOTNET_DOWNLOAD_URL https://dotnetcli.blob.core.windows.net/dotnet/Runtime/$DOTNET_VERSION/dotnet-debian-x64.$DOTNET_VERSION.tar.gz
+
+ENV http_proxy=http://ip:9400/
+ENV https_proxy=http://ip:9400/
+
+RUN apt-get update \ 
+&& apt-get install -y --no-install-recommends \
+nano
+
+#unset PROXY
+ENV http_proxy=""
+ENV https_proxy=""
+
+VOLUME ["/settings/"]
+
+EXPOSE 5432/tcp

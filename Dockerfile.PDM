@@ -1,0 +1,27 @@
+FROM microsoft/dotnet:2.1-aspnetcore-runtime
+
+WORKDIR /app
+
+ENV CFG_SETTINGS_LOCATION="/settings/"
+
+ENV http_proxy=http://ip:9400/
+ENV https_proxy=http://:9400/
+
+RUN apt-get update \
+&& apt-get install -y --no-install-recommends \
+nano \
+&& ln -s /app/siemens/ /var/lib/siemens \
+&& rm -rf /var/lib/apt/lists/*
+
+#copy source code
+COPY ./publish_PDM /app
+
+#unset PROXY
+ENV http_proxy=""
+ENV https_proxy=""
+
+VOLUME ["/settings/"]
+
+EXPOSE 5001/tcp
+
+ENTRYPOINT ["/settings/PDMTest/init_pdm.sh"]

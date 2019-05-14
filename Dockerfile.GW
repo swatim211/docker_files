@@ -1,0 +1,36 @@
+#Source Image
+FROM microsoft/dotnet:2.1-aspnetcore-runtime
+
+ENV http_proxy=http://ip:9400/
+ENV https_proxy=http://ip:9400/
+ENV GW_CONFIG_PATH=""
+
+RUN apt-get -q update \
+&& apt-get -y install nano \
+&& rm -rf /var/list/apt/lists/*
+
+#unset PROXY
+ENV http_proxy=""
+ENV https_proxy=""
+
+VOLUME ["/settings/"]
+
+WORKDIR /app
+ENV LD_LIBRARY_PATH=/app
+
+#copy source code
+COPY ./publish_GW /app
+
+#create symbolic library links
+RUN ln -s /app/libopenpal.so libopenpal.so.1 \
+&& ln -s /app/libasiopal.so libasiopal.so.1 \
+&& ln -s /app/libopendnp3.so libopendnp3.so.2 \
+&& ln -s /app/libasiodnp3.so libasiodnp3.so.1
+
+EXPOSE 5000/tcp
+EXPOSE 20000/tcp
+EXPOSE 8089/tcp
+EXPOSE 102/tcp
+EXPOSE 9000/tcp
+
+ENTRYPOINT dotnet Siemens.AssetGuard.Gateway.DataServices.dll $GW_CONFIG_PATH

@@ -1,0 +1,140 @@
+version: '3.6'
+services:
+    database:
+        container_name: asset_guard_db
+        build:
+            context: .
+            dockerfile: Dockerfile.DB
+        image: asset_guard/db:${ASSETGUARD_VERSION:-latest}
+        restart: always
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.3
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_DB=assetguarddb
+            - POSTGRES_PASSWORD=postgres
+    config:
+        container_name: asset_guard_cfg
+        build:
+            context: .
+            dockerfile: Dockerfile.CFG
+        image: asset_guard/configtool:${ASSETGUARD_VERSION:-latest}
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.7
+        volumes:
+            - type: bind
+              source: ${SETTINGS_DIR:-./settings/}
+              target: /settings/
+        environment:
+            - CFG_SETTINGS_LOCATION=/settings/            
+            - XML_STATION_CONFIG=/settings/${CONFIG_FILE:-config.xml}
+        depends_on:
+            - database
+    gateway:
+        container_name: gateway
+        build:
+            context: .
+            dockerfile: Dockerfile.GW
+        image: asset_guard/gateway:${ASSETGUARD_VERSION:-latest}
+        restart: always
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.4
+        ports:
+            - "5000:5000"
+            - "20000:20000"
+            - "8089:8089"
+            - "102:102"
+        volumes:
+            - type: bind
+              source: ${SETTINGS_DIR:-./settings/}
+              target: /settings/
+        environment:
+            - GW_CONFIG_PATH=/settings/
+        depends_on:
+            - database
+    auth-server:
+        container_name: securityserver
+        build:
+            context: .
+            dockerfile: Dockerfile.SecSrv
+        image: asset_guard/security_server:1.0
+        restart: always
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.6
+        ports:
+            - "5020:5020"
+        volumes:
+            - type: bind
+              source: ${SETTINGS_DIR:-./settings/}
+              target: /settings/
+        environment:
+            - SEC_SETTINGS_LOCATION=/settings/
+        depends_on:
+            - database
+    ui:
+        container_name: assetguard_ui
+        image: asset_guard/ui:${ASSETGUARD_VERSION:-latest}
+        restart: always
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.2
+        ports:
+            - "5004:5004"
+        volumes:
+            - type: bind
+              source: ${SETTINGS_DIR:-./settings}/img_custom
+              target: /settings/img_custom
+        environment:
+            - ADDR_SECURITY_SERVER=${HOST_IP}
+            - ADDR_GATEWAY=${HOST_IP}
+        
+    pdm:
+        container_name: pdm
+        build:
+            context: .
+            dockerfile: Dockerfile.PDM
+        image: asset_guard/pdm:${ASSETGUARD_VERSION:-latest}
+        restart: always
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.8
+        ports:
+            - "5001:5001"
+        volumes:
+            - type: bind
+              source: ${SETTINGS_DIR:-./settings/}
+              target: /settings/
+        environment:
+            - GW_CONFIG_PATH=/settings/
+        
+    cbm:
+        container_name: cbm
+        build:
+            context: .
+            dockerfile: Dockerfile.CBM
+        image: asset_guard/cbm:${ASSETGUARD_VERSION:-latest}
+        restart: always
+        networks:
+            asset_network:
+                ipv4_address: 192.168.0.9
+        ports:
+            - "5001:5001"
+        volumes:
+            - type: bind
+              source: ${SETTINGS_DIR:-./settings/}
+              target: /settings/
+        environment:
+            - GW_CONFIG_PATH=/settings/
+
+networks:           
+    asset_network:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                - subnet: 192.168.0.1/24

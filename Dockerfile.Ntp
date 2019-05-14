@@ -1,0 +1,27 @@
+FROM debian:stretch-slim
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV http_proxy=http://ip:9400/
+
+RUN apt-get -q update                              \
+ && apt-get -y --no-install-recommends install ntp \
+ && apt-get install nano \
+ && rm -rf /var/lib/apt/lists/*
+
+VOLUME ["/media/builds/"]
+
+#copy ntp.conf
+COPY ./ntp.conf /etc/
+
+# tweak some permissions to run as root
+RUN chgrp root /var/lib/ntp \
+ && chmod g+w  /var/lib/ntp
+
+#unset PROXY
+ENV http_proxy=""
+
+# ntp port
+EXPOSE 123/udp
+
+# start ntpd in the foreground
+ENTRYPOINT [ "/usr/sbin/ntpd", "-g", "-n" ]

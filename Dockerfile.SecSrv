@@ -1,0 +1,26 @@
+#Specify source image 
+FROM microsoft/dotnet:2.1-aspnetcore-runtime
+
+WORKDIR /app 
+
+ENV http_proxy=http://ip:9400/
+ENV https_proxy=http://ip:9400/
+ENV SEC_SETTINGS_LOCATION=""
+
+RUN mkdir -p /usr/share/man/man1 \
+&& mkdir -p /usr/share/man/man7 \
+&& apt-get -q update \
+&& apt-get install -y --no-install-recommends \
+postgresql-client \
+nano \
+&& rm -rf /var/list/apt/lists/*
+
+VOLUME ["/settings/"]
+
+COPY ./publish_SecSrv /app 
+
+RUN chmod 755 /app/init.sh
+
+EXPOSE 5020/tcp
+
+ENTRYPOINT ["/app/init.sh"]
